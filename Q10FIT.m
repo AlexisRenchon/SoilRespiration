@@ -7,6 +7,7 @@ function [beta_Q10,R_Q10,J_Q10,CovB_Q10,MSE_Q10,ErrorModelInfo_Q10,rsq_Q10,NEE_Q
 % Condition example = find(qc == 0 & qc_Sc == 0 & AGC_c == 0 & u > 0.2 & isnan(NEE) == 0 & daytime == 0 & year_t == 2015);
 Dep_var = Y(Condition);
 Ind_var = X(Condition);
+[Ind_var, Dep_var] = prepareCurveData( Ind_var, Dep_var );
 Tref = nanmedian(Ind_var);
 
 Model_Q10 = @(Param,Ind_var) Param(1)*Param(2).^((Ind_var(:,1)-Tref)./10);
