@@ -1,10 +1,11 @@
+clear;
 % Load raw data (.csv file)
 % Location of raw input file
 source_Euc = 'Input\Input EucFACE\EucFACE_Rsoil_met.csv';
 % Create datastore to access collection of data
 ds_Euc = datastore(source_Euc);
 % Select variable of interest
-ds_Euc.SelectedVariableNames = {'DateTime_Euc_c','Rsoil_R3c0','Ta_HMP155','PAR'}; 
+%ds_Euc.SelectedVariableNames = {'DateTime_Euc_c','Rsoil_R3c0','Ta_HMP155','PAR'}; 
 %ds_Euc.TreatAsMissing = 'NA';
 % Read selected variables, save it in the workspace as a table
 Euc_Data = readall(ds_Euc);
@@ -28,7 +29,7 @@ PAR = Euc_Data.PAR;
 % clear unused variables
 clearvars Date_Euc Time_Euc Euc_Data ds_Euc source_Euc;
 
-
+n = length(DateTime_Euc);
 for i = 1:n
 mean_Euc(i,1) = nanmean([R1c3(i) R1c5(i) R2c4(i) R2c6(i) R3c2(i) R3c0(i) R4c0(i) R4c2(i) R5c6(i) R5c7(i) ...
     R6c0(i) R6c3(i) ]);
@@ -63,6 +64,8 @@ y_p(10:12) = quantile(GPP_AR(daytime_qc_c == 0 & Ta > 20 & Ta < 25),[0.25 0.5 0.
 y_p(13:15) = quantile(GPP_AR(daytime_qc_c == 0 & Ta > 25 & Ta < 30),[0.25 0.5 0.75]);
 y_p(16:18) = quantile(GPP_AR(daytime_qc_c == 0 & Ta > 30 & Ta < 35),[0.25 0.5 0.75]);
 figure; scatter(x_p,y_p);
+x_pm = x_p(2:3:17);
+y_pm = y_p(2:3:17);
 
 params = sigm_fit(x_pm,y_pm);
 n = length(Ta);
@@ -111,15 +114,57 @@ ER_new_LI = mean_Euc + AR_fT_LI;
 
 hold on; plot(DateTime_Euc,ER_new_LI);
 
+% figure;
+% subplot(4,1,1); hold off; hold on;
+% scatter(datenum(DateTime_CUP),ER,5,[0.7 1 0.7]);
+% scatter(datenum(DateTime_Euc),ER_new,5,[0.7 0.7 1]);
+% scatter(datenum(DateTime_Euc),mean_Euc,5,[0.7 0.7 0.7]);
+% [xData, yData] = prepareCurveData( datenum(DateTime_CUP), ER);
+% % Set up fittype and options.
+% ft = fittype( 'smoothingspline' );
+% opts = fitoptions( 'Method', 'SmoothingSpline' );
+% opts.SmoothingParam = 0.00001;
+% % Fit model to data.
+% [fitresult, gof] = fit( xData, yData, ft, opts );
+% h = plot(fitresult); set(h,'color',[0 1 0]); set(h,'LineWidth',2);
+% [xData, yData] = prepareCurveData( datenum(DateTime_Euc), ER_new);
+% % Set up fittype and options.
+% ft = fittype( 'smoothingspline' );
+% opts = fitoptions( 'Method', 'SmoothingSpline' );
+% opts.SmoothingParam = 0.00001;
+% % Fit model to data.
+% [fitresult, gof] = fit( xData, yData, ft, opts );
+% h = plot(fitresult); set(h,'color',[0 0 1]); set(h,'LineWidth',2);
+% [xData, yData] = prepareCurveData( datenum(DateTime_Euc), mean_Euc);
+% % Set up fittype and options.
+% ft = fittype( 'smoothingspline' );
+% opts = fitoptions( 'Method', 'SmoothingSpline' );
+% opts.SmoothingParam = 0.00001;
+% % Fit model to data.
+% [fitresult, gof] = fit( xData, yData, ft, opts );
+% h = plot(fitresult); set(h,'color',[0 0 0]); set(h,'LineWidth',2);
+% legend('hide');
+% h = legend('ER standard','ER new','SR');
+% h.FontSize = 10;
+% ylabel('Rsoil (\mumol m^-^2 s^-^1)'); datetick('x','mmm yy');
+% xlabel('Date');
+% ax = gca; ax.FontSize = 12;
+% xlim([datenum(datetime(2014,01,01)) datenum(datetime(2016,01,01))]);
+% ylim([-1 11]);
+
 figure;
-subplot(4,1,1); hold off; hold on;
-scatter(datenum(DateTime_CUP),ER,5,[0.3 1 0.3]);
-scatter(datenum(DateTime_Euc),ER_new,5,'c');
-scatter(datenum(DateTime_Euc),mean_Euc,5,'k');
-h = legend('Reco standard','Reco new','Rsoil');
-h.FontSize = 6;
+hold on;
+scatter(datenum(DateTime_CUP),ER,5,[0 1 0]);
+scatter(datenum(DateTime_Euc),ER_new,5,[0 0 1]);
+scatter(datenum(DateTime_Euc),mean_Euc,5,[0 0 0]);
+h = legend('ER standard','ER new','SR');
+h.FontSize = 10;
 ylabel('Rsoil (\mumol m^-^2 s^-^1)'); datetick('x','mmm yy');
+xlabel('Date');
 ax = gca; ax.FontSize = 12;
+ylim([-1 11]);
+
+
 
 subplot(4,1,2);
 scatter(datenum(DateTime_Euc),mean(horzcat(Euc_Data.FM1,Euc_Data.FM2,Euc_Data.FM3),2),5,[0 0 1]);
@@ -174,7 +219,7 @@ subplot(4,1,3); ylim([0 1]);
 for i = 1:4
     subplot(4,1,i);
     xlim([datenum(datetime(2014,11,21)) datenum(datetime(2014,11,28))]);
-    datetick('x','dd-mmm-yyyy');
+    datetick('x','dd-mmm-yy');
 end
 subplot(4,1,3); ylim([0 20]);
 
@@ -187,4 +232,100 @@ end
 subplot(4,1,1); ylim([0 15]);
 subplot(4,1,4); ylim([5 30]);
 subplot(4,1,3); ylim([0 20]);
+
+
+% GPP vs VPD by Fuel moisture
+FM = nanmean(horzcat(Euc_Data.FM1,Euc_Data.FM2,Euc_Data.FM3),2);
+SWC_euc5 = nanmean(horzcat(Euc_Data.SWC5cm_1_R1,Euc_Data.SWC5cm_2_R1,Euc_Data.SWC5cm_1_R2,Euc_Data.SWC5cm_2_R2,Euc_Data.SWC5cm_1_R3,Euc_Data.SWC5cm_2_R3,Euc_Data.SWC5cm_1_R4,Euc_Data.SWC5cm_2_R4,Euc_Data.SWC5cm_1_R5,Euc_Data.SWC5cm_2_R5,Euc_Data.SWC5cm_1_R6,Euc_Data.SWC5cm_2_R6),2);
+FMbinedges = quantile(FM,0:1/2:1);
+SWC_euc5_e = quantile(SWC_euc5,0:1/2:1);
+use = find(PAR > 800 & FM > FMbinedges(1) & FM < FMbinedges(2) & isnan(GPP_new) == 0);
+figure; hold on;
+binplot_v2(VPD_c(use),-GPP_new(use),40,'r',3);
+binplot_v2(VPD_c(use),-GPP_c(use),40,[1 0.7 0.7],3);
+use = find(PAR > 800 & FM > FMbinedges(2) & FM < FMbinedges(3) & isnan(GPP_new) == 0);
+binplot_v2(VPD_c(use),-GPP_new(use),40,'b',3);
+binplot_v2(VPD_c(use),-GPP_c(use),40,[0.7 0.7 1],3);
+
+
+n = length(DateTime_Euc_c);
+[Lia,Locb] = ismember(DateTime_Euc,DateTime_CUP);
+VPD_c = nan(n,1);
+GPP_c = nan(n,1);
+ER_SOLO_c = nan(n,1);
+daytime_c = nan(n,1);
+for i = 1:n
+    if Locb(i) > 0
+        VPD_c(i,1) = vpd(Locb(i),1);
+        GPP_c(i,1) = -GEP(Locb(i),1);
+        ER_SOLO_c(i,1) = ER_SOLO(Locb(i),1);
+        daytime_c(i,1) = daytime(Locb(i),1);
+    end
+end
+
+
+% Daily and monthly average of Ts and R in 2014 
+% monthly
+Rsoil_m = nan(12,1);
+Tsoil_m = nan(12,1);
+SWC_m = nan(12,1);
+figure; hold on;
+for y = 1:2
+    for m = 1:12
+        use = find(month(DateTime_Euc) == m & year(DateTime_Euc) == 2012 + y);
+        Rsoil_m(m) = nanmean(mean_Euc(use));
+        Tsoil_m(m) = nanmean(Ts(use));
+        SWC_m(m) = nanmean(SWC_euc5(use));
+    end
+Rsoil_m_avg = mean(Rsoil_m); Tsoil_m_avg = mean(Tsoil_m);
+Rsoil_m_anomalie = Rsoil_m - Rsoil_m_avg; Tsoil_m_anomalie = Tsoil_m - Tsoil_m_avg;
+scatter(Tsoil_m_anomalie,Rsoil_m_anomalie,20,SWC_m,'filled');
+xlabel('Tsoil monthly anomalie'); ylabel('Rsoil monthly anomalie');
+end
+h = colorbar;
+ylabel(h, 'SWC_5_c_m (%)');
+set(h,'FontSize',10);
+
+% daily
+Rsoil_d = nan(28,1);
+Tsoil_d = nan(28,1);
+FM_d = nan(28,1);
+figure; hold on;
+for m = 1:12
+    for d = 1:28
+        use = find(month(DateTime_Euc) == m & day(DateTime_Euc) == d & year(DateTime_Euc) == 2014);
+        Rsoil_d(d) = nanmean(mean_Euc(use));
+        Tsoil_d(d) = nanmean(Ts(use));
+        FM_d(d) = nanmean(FM(use));
+        Rsoil_d_avg = mean(Rsoil_d); Tsoil_d_avg = mean(Tsoil_d);
+        Rsoil_d_anomalie = mean_Euc(use) - Rsoil_d_avg; Tsoil_d_anomalie = Ts(use) - Tsoil_d_avg;
+        scatter(Tsoil_d_anomalie,Rsoil_d_anomalie,20,FM(use),'filled');
+        xlabel('Tsoil half-hourly anomalie'); ylabel('Rsoil half-hourly anomalie');
+    end
+end
+h = colorbar;
+ylabel(h, 'Fuel moisture (%)');
+set(h,'FontSize',10);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
