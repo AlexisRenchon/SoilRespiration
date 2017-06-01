@@ -31,7 +31,7 @@ clearvars Date_Euc Time_Euc Euc_Data ds_Euc source_Euc;
 
 n = length(DateTime_Euc);
 for i = 1:n
-mean_Euc(i,1) = nanmean([R1c3(i) R1c5(i) R2c4(i) R2c6(i) R3c2(i) R3c0(i) R4c0(i) R4c2(i) R5c6(i) R5c7(i) ...
+Rsoil(i,1) = nanmean([R1c3(i) R1c5(i) R2c4(i) R2c6(i) R3c2(i) R3c0(i) R4c0(i) R4c2(i) R5c6(i) R5c7(i) ...
     R6c0(i) R6c3(i) ]);
 end
 
@@ -39,7 +39,9 @@ hold on; plot(DateTime_RsoilCUP,RsoilCUP,'g');
 datetick('x','mYY');
 
 use = find(qc == 0 & qc_Sc == 0 & u > 0.2 & AGC_c == 0);
+use_night = find(qc == 0 & qc_Sc == 0 & u > 0.2 & AGC_c == 0 & daytime == 0);
 NEE_qc = NEE_c(use);
+NEE_qc_night = NEE_c(use_night);
 DateTime_CUPqc = DateTime_CUP(use);
 daytime_qc = daytime(use);
 n = length(DateTime_Euc_c);
@@ -52,9 +54,26 @@ for i = 1:n
         daytime_qc_c(i,1) = daytime_qc(Locb(i),1);
     end
 end
+DateTime_CUPqc_night = DateTime_CUP(use_night);
+%daytime_qc = daytime(use);
+n = length(DateTime_Euc_c);
+[Lia,Locb] = ismember(DateTime_Euc,DateTime_CUPqc_night);
+%NEE_qc_c = nan(n,1);
+NEE_qc_c_night = nan(n,1);
+%daytime_qc_c = nan(n,1);
+for i = 1:n
+    if Locb(i) > 0
+        %NEE_qc_c(i,1) = NEE_qc(Locb(i),1);
+        NEE_qc_c_night(i,1) = NEE_qc_night(Locb(i),1);
+        %daytime_qc_c(i,1) = daytime_qc(Locb(i),1);
+    end
+end
 clearvars Rsoil_r6c3_temp DateTime_Euc_temp use i Lia Locb n;
 
-GPP_AR = NEE_qc_c - mean_Euc;
+GPP_AR = NEE_qc_c - Rsoil;
+AR_night = NEE_qc_c_night - Rsoil;
+ER_qc = NEE_c(AGC_c == 0 & daytime == 0 & qc == 0 & qc_Sc ==0 & u > 0.2); 
+
 
 x_p = [7.5 7.5 7.5 12.5 12.5 12.5 17.5 17.5 17.5 22.5 22.5 22.5 27.5 27.5 27.5 32.5 32.5 32.5];
 y_p(1:3) = quantile(GPP_AR(daytime_qc_c == 0 & Ta > 5 & Ta < 10),[0.25 0.5 0.75]);
@@ -73,7 +92,7 @@ for i = 1:n
     AR_fT(i,1) = params(1)+(params(2)-params(1))/(1+10^((params(3)-Ta(i))*params(4)));
 end
 
-ER_new = AR_fT + mean_Euc;
+ER_new = AR_fT + Rsoil;
 GPP_new = GPP_AR - AR_fT;
 use = find(qc == 0 & qc_Sc == 0 & AGC_c == 0 & u > 0.2 & daytime == 1);
 figure; scatter(PAR(use),GPP_new(use),20,Ta(use));
@@ -110,7 +129,7 @@ for i = 1:n
    end
 end
 
-ER_new_LI = mean_Euc + AR_fT_LI;
+ER_new_LI = Rsoil + AR_fT_LI;
 
 hold on; plot(DateTime_Euc,ER_new_LI);
 
@@ -156,7 +175,7 @@ figure;
 hold on;
 scatter(datenum(DateTime_CUP),ER,5,[0 1 0]);
 scatter(datenum(DateTime_Euc),ER_new,5,[0 0 1]);
-scatter(datenum(DateTime_Euc),mean_Euc,5,[0 0 0]);
+scatter(datenum(DateTime_Euc),Rsoil,5,[0 0 0]);
 h = legend('ER standard','ER new','SR');
 h.FontSize = 10;
 ylabel('Rsoil (\mumol m^-^2 s^-^1)'); datetick('x','mmm yy');
@@ -252,17 +271,27 @@ n = length(DateTime_Euc_c);
 [Lia,Locb] = ismember(DateTime_Euc,DateTime_CUP);
 VPD_c = nan(n,1);
 GPP_c = nan(n,1);
-ER_SOLO_c = nan(n,1);
+%SWC_c = nan(n,1);
+%ER_SOLO_c = nan(n,1);
 daytime_c = nan(n,1);
 for i = 1:n
     if Locb(i) > 0
         VPD_c(i,1) = vpd(Locb(i),1);
         GPP_c(i,1) = -GEP(Locb(i),1);
-        ER_SOLO_c(i,1) = ER_SOLO(Locb(i),1);
+        %ER_SOLO_c(i,1) = ER_SOLO(Locb(i),1);
         daytime_c(i,1) = daytime(Locb(i),1);
+        %SWC_c(i,1) = SWC(Locb(i),1);
     end
 end
 
+n = length(DateTime_CUP);
+[Lia,Locb] = ismember(DateTime_CUP,DateTime_Euc);
+FM_CUP = nan(n,1);
+for i = 1:n
+    if Locb(i) > 0
+        FM_CUP(i,1) = FM(Locb(i),1);
+    end
+end
 
 % Daily and monthly average of Ts and R in 2014 
 % monthly
@@ -273,7 +302,7 @@ figure; hold on;
 for y = 1:2
     for m = 1:12
         use = find(month(DateTime_Euc) == m & year(DateTime_Euc) == 2012 + y);
-        Rsoil_m(m) = nanmean(mean_Euc(use));
+        Rsoil_m(m) = nanmean(Rsoil(use));
         Tsoil_m(m) = nanmean(Ts(use));
         SWC_m(m) = nanmean(SWC_euc5(use));
     end
@@ -294,11 +323,11 @@ figure; hold on;
 for m = 1:12
     for d = 1:28
         use = find(month(DateTime_Euc) == m & day(DateTime_Euc) == d & year(DateTime_Euc) == 2014);
-        Rsoil_d(d) = nanmean(mean_Euc(use));
+        Rsoil_d(d) = nanmean(Rsoil(use));
         Tsoil_d(d) = nanmean(Ts(use));
         FM_d(d) = nanmean(FM(use));
         Rsoil_d_avg = mean(Rsoil_d); Tsoil_d_avg = mean(Tsoil_d);
-        Rsoil_d_anomalie = mean_Euc(use) - Rsoil_d_avg; Tsoil_d_anomalie = Ts(use) - Tsoil_d_avg;
+        Rsoil_d_anomalie = Rsoil(use) - Rsoil_d_avg; Tsoil_d_anomalie = Ts(use) - Tsoil_d_avg;
         scatter(Tsoil_d_anomalie,Rsoil_d_anomalie,20,FM(use),'filled');
         xlabel('Tsoil half-hourly anomalie'); ylabel('Rsoil half-hourly anomalie');
     end
